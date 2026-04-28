@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>منصة المفقودات - التكوين المهني OFPPT</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; }
+        .header { background-color: #004b87; color: white; padding: 20px; text-align: center; border-bottom: 5px solid #009640; position: relative; } 
+        .header img { max-width: 150px; }
+        .header h1 { margin-top: 10px; }
+        .container { width: 90%; margin: auto; padding: 20px; }
+        .form-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 30px; border-top: 4px solid #004b87; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn { background-color: #009640; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
+        .btn:hover { background-color: #007a33; }
+        
+        /* ستيل ديال الفلتر */
+        .filters { text-align: center; margin-bottom: 20px; }
+        .filter-btn { background-color: #004b87; color: white; padding: 10px 20px; border: none; border-radius: 20px; cursor: pointer; margin: 0 5px; font-size: 14px; font-weight: bold; transition: 0.3s; }
+        .filter-btn:hover { background-color: #00335e; }
+        .filter-btn.active { background-color: #009640; } /* اللون الأخضر للبطونة لي مكليكيين عليها */
+
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .item-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; border-bottom: 3px solid #004b87; transition: 0.3s; }
+        .item-card img { max-width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+        .badge { display: inline-block; padding: 5px 12px; border-radius: 15px; font-size: 12px; color: white; }
+        .badge-lost { background-color: #e74c3c; }
+        .badge-found { background-color: #009640; }
+        .footer { background-color: #004b87; color: white; padding: 15px; text-align: center; margin-top: 30px; }
+        .footer img { max-width: 80px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="OFPPT Logo">
+        <h1>منصة المفقودات - التكوين المهني</h1>
+    </div>
+
+    <div class="container">
+        <div class="form-box">
+            <h3>ضيف إعلان جديد</h3>
+            <form method="POST" action="/" enctype="multipart/form-data">
+                <select name="item_type" required>
+                    <option value="" disabled selected>واش لقيتي ولا وضّرتي شي حاجة؟</option>
+                    <option value="وضّرت">وضّرت شي حاجة (ضيعتها)</option>
+                    <option value="لقيت">لقيت شي حاجة</option>
+                </select>
+                <input type="text" name="title" placeholder="شنو هي هاد الحاجة؟ (مثلا: سوارت، كارط ناسيونال...)" required>
+                <textarea name="description" placeholder="عطينا تفاصيل (فين ضاعت/تلقات، اللون...)" required></textarea>
+                <input type="text" name="contact" placeholder="كيفاش يتواصل معاك مولاها؟ (نمرة، إيميل، ولا قسم)" required>
+                <label style="display: block; margin-top: 10px; text-align: right;">حط تصويرة (اختياري):</label>
+                <input type="file" name="image" accept="image/*">
+                
+                <button type="submit" class="btn">نشر الإعلان</button>
+            </form>
+        </div>
+
+        <h2>الإعلانات</h2>
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterItems('all', this)">الكل</button>
+            <button class="filter-btn" onclick="filterItems('وضّرت', this)">المفقودات 🔴</button>
+            <button class="filter-btn" onclick="filterItems('لقيت', this)">المعثور عليها 🟢</button>
+        </div>
+
+        <div class="items-grid">
+            {% for item in items %}
+            <div class="item-card" data-type="{{ item.item_type }}">
+                {% if item.image_filename %}
+                    <img src="{{ url_for('static', filename='uploads/' + item.image_filename) }}" alt="تصويرة">
+                {% else %}
+                    <img src="https://via.placeholder.com/280x200?text=بدون+صورة" alt="بدون صورة">
+                {% endif %}
+                <h3>{{ item.title }}</h3>
+                <p>
+                    {% if item.item_type == 'وضّرت' %}
+                        <span class="badge badge-lost">مفقود</span>
+                    {% else %}
+                        <span class="badge badge-found">مُعثور عليه</span>
+                    {% endif %}
+                </p>
+                <p>{{ item.description }}</p>
+                <p><strong>للتواصل:</strong> {{ item.contact }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>مكتب التكوين المهني وإنعاش الشغل &copy; 2026</p>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="OFPPT Logo Footer">
+    </div>
+
+    <script>
+        function filterItems(type, btn) {
+            // كيحيد اللون الأخضر (active) من الڭاع البطونات
+            let buttons = document.getElementsByClassName('filter-btn');
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].classList.remove('active');
+            }
+            // كيزيد اللون الأخضر غير للبطونة لي كليكينا عليها
+            btn.classList.add('active');
+
+            // كيفلتر الإعلانات
+            let items = document.getElementsByClassName('item-card');
+            for (let i = 0; i < items.length; i++) {
+                if (type === 'all' || items[i].getAttribute('data-type') === type) {
+                    items[i].style.display = 'block'; // كيبينها
+                } else {
+                    items[i].style.display = 'none'; // كيخفيها
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>
